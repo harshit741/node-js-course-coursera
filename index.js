@@ -2,6 +2,7 @@ const express = require('express');         //requiring Express module
 const http = require('http');
 const morgan = require('morgan');           // morgan is used of to log request, errors, etc in console
 const parser = require('body-parser');      //requiring body parser module to parse request body
+const dishRouter = require('./routes/dishRouter')
 
 const hostname = 'localhost';
 const port = 3000;
@@ -10,28 +11,6 @@ const app = express();      //defining a variable to use express module
 app.use(morgan('dev'));
 app.use(parser.json());
 
-app.all('/dishes', (request, response, next) => {
-    response.statusCode = 200;
-    response.setHeader('Content-Type','text/plain');
-    next();                                             //next() passes the request further to be used
-});
-
-app.get('/dishes', (request, response, next) =>{
-    response.end('Will send all the dishes to you!');
-});
-
-app.post('/dishes', (request, response, next) => {
-    response.end('Will add the dish: ' + request.body.name + ' with details ' + request.body.description);
-});
-
-app.put('/dishes', (request, response, next) => {
-    response.statusCode = 403;
-    response.end('PUT operation not supported!')
-});
-
-app.delete('/dishes',(request, response, next) => {
-    response.end('Deleting all dishes!');
-});
 
 app.get('/dishes/:dishId', (request, response, next) =>{
     response.end('Will send details of the dish: ' + request.params.dishId + ' to you!');
@@ -49,6 +28,8 @@ app.put('/dishes/:dishId', (request, response, next) => {
 app.delete('/dishes/:dishId',(request, response, next) => {
     response.end('Deleting dish!' + request.params.dishId);
 });
+
+app.use('/dishes', dishRouter);                     // any request to /dishes will be handled by dishRouter
 
 app.use(express.static(__dirname + '/public'));
 
