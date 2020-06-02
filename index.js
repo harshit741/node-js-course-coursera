@@ -1,14 +1,23 @@
- const http = require('http');   //requiring core module of node 
- const hostname = 'localhost';   // declaring host
- const port = 3000;              // declaring port
+const express = require('express');         //requiring Express module
+const http = require('http');
+const morgan = require('morgan');
 
- const server = http.createServer((request , response) => {
-    console.log(request.headers);
+const hostname = 'localhost';
+const port = 3000;
 
-    response.statusCode = 200;                                  //creating server and declaring response and request
-    response.setHeader('Content-Type' , 'text/html');           //variables
-    response.end('<html><body><h2>Hey there, Node devloper.</h2></body></html>');
- });
- server.listen(port , hostname , () => {
-    console.log('Server running at http://' + hostname + ':' + port);       //starting server  on execution
+const app = express();      //defining a variable to use express module
+app.use(morgan('dev'));
+
+app.use(express.static(__dirname + '/public'));
+
+app.use((request, response, next) => {
+    response.statusCode = 200;
+    response.setHeader('Content-Type' , 'text/html');
+    response.end('<html><body><h1>Express server running.</h1></body></html>')
 });
+
+const server = http.createServer(app);
+
+server.listen(port, hostname, () => {
+    console.log(`Express server running at http://${hostname}:${port}.`)
+})
