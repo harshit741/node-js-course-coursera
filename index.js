@@ -1,35 +1,35 @@
-const express = require('express');                     //requiring Express module
-const http = require('http');
-const morgan = require('morgan');                       // morgan is used of to log request, errors, etc in console
-const parser = require('body-parser');                   //requiring body parser module to parse request body
+const MongoClient = require('mongodb').MongoClient;
+const assert = require('assert');
 
-const dishRouter = require('./routes/dishRouter');      //importing dishRouter from ./routes
-const promoRouter = require('./routes/promoRouter');
-const leadersRouter = require('./routes/leadersRouter');
+const url = 'mongodb://localhost:27017/';               //url of db with port
+const dbname = 'newDb';
 
-const hostname = 'localhost';
-const port = 3000;
+MongoClient.connect(url, (err, client) => {             //creating connection with server
 
-const app = express();                               //defining a variable to use express module
+    assert.equal(err, null);                            //checking for errors
+    console.log('Connected successfully!');
 
-app.use(morgan('dev'));                              //using morgan
-app.use(parser.json());                              //using parser
-app.use('/dishes', dishRouter);                      // any request to /dishes will be handled by dishRouter
-app.use('/promotions', promoRouter);
-app.use('/leaders', leadersRouter);
-app.use('/dishes/:dishId',dishRouter);                // any request to /dishes/:dishId will be handled by dishRouter
-app.use('/promotions/:promoId', promoRouter);
-app.use('/leaders/:leaderId', leadersRouter);
+    const db = client.db(dbname);                       //creating connection with db
+    const collection = db.collection('dishes');         //creating a variable to interact with db and perform operations
 
-app.use(express.static(__dirname + '/public'));      //mapping static pages to request url
+    collection.insertOne({"name" : "Italian Pizza",             //inserting data
+        "description" : "Spicy pizza from the original discoverers."}, (err, result) => {
+            assert.equal(err , null);
+            console.log('After Insert\n');
+            console.log(result.ops);                    //No. of operations carried out successfully
 
-app.use((request, response, next) => {
-    response.statusCode = 200;
-    response.setHeader('Content-Type','text/html');
-    response.end('<html><body><h1>Express server running.</h1></body></html>')
+            collection.find({}).toArray((err, docs) => {   // to show all records in DB
+                assert.equal(err, null);
+                console.log('Found\n'); 
+                console.log(docs);
+
+                db.dropCollection('dishes',(err, result) => {       //drop collection
+                    assert.equal(err, null);
+
+
+                    client.close();
+                } ) 
+            })
+        });
+
 });
-
-const server = http.createServer(app);
-server.listen(port, hostname, () => {
-    console.log(`Express server running at http://${hostname}:${port}.`)
-})
