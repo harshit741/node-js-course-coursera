@@ -3,6 +3,7 @@ const assert = require('assert');
 
 const url = 'mongodb://localhost:27017/';               //url of db with port
 const dbname = 'newDb';
+const dboper = require('./operations');                 //requiring operation module
 
 MongoClient.connect(url, (err, client) => {             //creating connection with server
 
@@ -10,26 +11,33 @@ MongoClient.connect(url, (err, client) => {             //creating connection wi
     console.log('Connected successfully!');
 
     const db = client.db(dbname);                       //creating connection with db
-    const collection = db.collection('dishes');         //creating a variable to interact with db and perform operations
 
-    collection.insertOne({"name" : "Italian Pizza",             //inserting data
-        "description" : "Spicy pizza from the original discoverers."}, (err, result) => {
-            assert.equal(err , null);
-            console.log('After Insert\n');
-            console.log(result.ops);                    //No. of operations carried out successfully
+    //Nested callbacks of operations imported from operation module
+    //passed with required parameters to do various operation
+    dboper.insertDocs(db, {"name" : "Indian Pizza" , "description" : "Cooked and smoked with spices"},      //Inserting
+     "dishes", (result) => { 
+        console.log('Insert document\n', result.ops);
 
-            collection.find({}).toArray((err, docs) => {   // to show all records in DB
-                assert.equal(err, null);
-                console.log('Found\n'); 
-                console.log(docs);
+        dboper.findDocs(db, "dishes", (docs) => {                                                           //Finding
+            console.log('Found docs:\n' + docs);
 
-                db.dropCollection('dishes',(err, result) => {       //drop collection
-                    assert.equal(err, null);
+            dboper.updateDocs(db, {"name" : "Indian Pizza"}, {"description" : "Cooked and baked with Indian spices"},
+            "dishes", (result) => {                                                                         //Updating
+                console.log('Updated document ' , result.result);
 
+                dboper.findDocs(db, "dishes", (docs) => {
+                    console.log('Found update documents :\n' , docs);
 
-                    client.close();
-                } ) 
-            })
+                    dboper.removeDocs(db, {"name" : "Indian Pizza"}, "dishes", (result) => {                //Removing doc
+                        console.log('Removed document\n' , result.result);
+
+                        db.dropCollection("dishes", (result) => {                                           //Droping collection
+                            console.log('Dropped collection: \n', result);
+                            client.close();                                                                 //closing collection
+                        })
+                    });
+                });
+            });
         });
-
+    });
 });
