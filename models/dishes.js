@@ -1,7 +1,26 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;                                // Schema variable
 
-const dishSchema = new Schema({                               //Creating Schema
+const commentSchema = new Schema({                              //Creating Comment Schema
+    rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+        required: true
+    },
+    comment: {
+        type: String,
+        required: true
+    },
+    author: {
+        type: String,
+        required: true
+    }
+}, {
+    timestamps: true  
+});
+
+const dishSchema = new Schema({                               //Creating dishes Schema
     name: {
         type: String,
         required: true,
@@ -10,7 +29,8 @@ const dishSchema = new Schema({                               //Creating Schema
     description: {
         type: String,
         required: true
-    }
+    },
+    comments: [commentSchema]                                //using comment schema in existing document                  
 },{
     timestamps: true
 });
