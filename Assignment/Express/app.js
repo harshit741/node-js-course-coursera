@@ -14,10 +14,10 @@ var app = express();
 const mongoose = require('mongoose');                       //requiring mongoose in Express app
 const Dishes = require('./models/dishes');                  //requiring model
 const url = 'mongodb://localhost:27017/conFusion';          //setting db url
-const connect = mongoose.connect(url);                      
+const connect = mongoose.connect(url);
 
 connect.then((db) => {                                      //connecting to db
-    console.log("Connected correctly to server");
+  console.log("Connected correctly to server");
 }, (err) => { console.log(err); });
 
 // view engine setup
@@ -27,31 +27,46 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('secret-key'));                    //using cookie parser with sign
 
-function auth(request, response, next){
+function auth(request, response, next) {
   console.log(request.headers);
 
-  var authHeader = request.headers.authorization;
-  if(!authHeader){
-    var err = new Error('You are not authorised');
-    response.setHeader('WWW-Authenticate', 'Basic');
-    err.status = 401;
-    return next(err);
-  }
-  var auth = new Buffer(authHeader.split(' ')[1], 'base64').toString().split(':');
+  if (!request.signedCookies.user) {                    //checking if cookies are legit and have info
+    var authHeader = request.headers.authorization;
+    if (!authHeader) {
+      var err = new Error('You are not authorised');
+      response.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      next(err);
+      return;
+    }
+    var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
 
-  var username = auth[0];
-  var password = auth[1];
+    var username = auth[0];
+    var password = auth[1];
 
-  if(username === 'admin' && password === 'password') {
-    next();
+    if (username === 'admin' && password === 'password') {              // creating cookie for new login 
+      response.cookie('user', 'admin', { signed: true });               // 'user' in line 50 & 35 should be same
+      next();                                                        
+    }
+    else {
+      var err = new Error('You are not authorised');
+      response.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      next(err);
+    }
   }
-  else{
-    var err = new Error('You are not authorised');
-    response.setHeader('WWW-Authenticate', 'Basic');
-    response.status = 401;
-    return next(err);
+  else {                                                                  //if cookies have right info than login
+    if (request.signedCookies.user === 'admin') {                            
+      next();
+    }
+    else {
+      var err = new Error('You are not authorised');
+      response.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      next(err);
+    }
   }
 }
 
@@ -69,12 +84,12 @@ app.use('/promotions/:promoId', promoRouter);
 app.use('/leaders/:leaderId', leaderRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
