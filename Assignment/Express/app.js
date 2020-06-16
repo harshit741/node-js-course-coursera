@@ -3,6 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -27,12 +29,18 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('secret-key'));                    //using cookie parser with sign
-
+// app.use(cookieParser('secret-key'));                    //using cookie parser with sign
+app.use(session({                                          // creating session
+  name: 'Sessiod-ID',
+  secret: 'Secret-key',
+  saveUninitialized: false,
+  resave: false,
+  store: new FileStore()
+}))
 function auth(request, response, next) {
-  console.log(request.headers);
+  console.log(request.session);
 
-  if (!request.signedCookies.user) {                    //checking if cookies are legit and have info
+  if (!request.session.user) {                    //checking if session is legit and have info
     var authHeader = request.headers.authorization;
     if (!authHeader) {
       var err = new Error('You are not authorised');
@@ -46,8 +54,8 @@ function auth(request, response, next) {
     var username = auth[0];
     var password = auth[1];
 
-    if (username === 'admin' && password === 'password') {              // creating cookie for new login 
-      response.cookie('user', 'admin', { signed: true });               // 'user' in line 50 & 35 should be same
+    if (username === 'admin' && password === 'password') {              // creating session if new login 
+      request.session.user = 'admin'                                    // 'user' in line 50 & 43 should be same
       next();                                                        
     }
     else {
@@ -57,8 +65,8 @@ function auth(request, response, next) {
       next(err);
     }
   }
-  else {                                                                  //if cookies have right info than login
-    if (request.signedCookies.user === 'admin') {                            
+  else {                                                                  //if session has right info than login
+    if (request.session.user === 'admin') {                            
       next();
     }
     else {
