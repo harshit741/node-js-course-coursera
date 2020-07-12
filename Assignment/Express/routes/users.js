@@ -4,6 +4,7 @@ var usersRouter = express.Router();
 const User = require('../models/user');
 usersRouter.use(parser.json());
 var passport = require('passport');
+var authenticate = require('../Authenticate');
 /* GET users listing. */
 usersRouter.get('/', (request, response, next) => {
   response.send('respond with a resource');
@@ -28,9 +29,10 @@ usersRouter.post('/register', (request, response, next) => {
 });
 
 usersRouter.post('/login', passport.authenticate('local'), (request, response) => {
+  var token = authenticate.getToken({_id: request.user._id})
   response.statusCode = 200;
   response.setHeader('Content-Type', 'application/json');
-  response.json({ success: true, status: 'You are successfully logged in!'});
+  response.json({ success: true, token: token, status: 'You are successfully logged in!'});
 });
 
 usersRouter.get('/logout', (request, response, next) => {
